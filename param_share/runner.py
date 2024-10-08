@@ -25,7 +25,7 @@ class Runner:
 
 		self.save_path = self.args.result_dir + '/' + args.alg
 		if not os.path.exists(self.save_path):
-		    os.makedirs(self.save_path)
+			os.makedirs(self.save_path)
 
 
 	def run(self, num):
@@ -74,8 +74,8 @@ class Runner:
 
 			# put observations of all the generated epsiodes together
 			for episode in episodes:
-			    for key in episode_batch.keys():
-			        episode_batch[key] = np.concatenate((episode_batch[key], episode[key]), axis=0)
+				for key in episode_batch.keys():
+					episode_batch[key] = np.concatenate((episode_batch[key], episode[key]), axis=0)
 			
 			# again, coma doesnt need buffer, so wont store the episodes sampled
 			if self.args.alg.find('coma') > -1:
@@ -84,11 +84,11 @@ class Runner:
 				self.agents.train(episode_batch, train_steps, self.rolloutWorker.epsilon)
 				train_steps += 1
 			else:
-			    self.buffer.store_episode(episode_batch)
-			    for train_step in range(self.args.train_steps):
-			        mini_batch = self.buffer.sample(min(self.buffer.current_size, self.args.batch_size))
-			        self.agents.train(mini_batch, train_steps)
-			        train_steps += 1
+				self.buffer.store_episode(episode_batch)
+				for train_step in range(self.args.train_steps):
+					mini_batch = self.buffer.sample(min(self.buffer.current_size, self.args.batch_size))
+					self.agents.train(mini_batch, train_steps)
+					train_steps += 1
 
 		self.agents.policy.save_model(train_step, end_training=True)
 
@@ -119,4 +119,8 @@ class Runner:
 				win_counter += 1
 
 		return win_counter / self.args.evaluate_epoch, episode_rewards / self.args.evaluate_epoch
-
+	
+	def test(self, num_games ):
+		for i in range(num_games):
+			prey_captured = self.rolloutWorker.play(evaluate=True)
+			print(f'{prey_captured} preys are captured')

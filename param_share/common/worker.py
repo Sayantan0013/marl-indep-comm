@@ -2,6 +2,9 @@ import numpy as np
 import torch
 from torch.distributions import one_hot_categorical
 import numpy as np
+import pickle
+import time
+from datetime import datetime
 
 
 # new worker for the communication tests
@@ -24,6 +27,72 @@ class RolloutWorker:
 
 		assert self.args.env.find("3m") == -1 and self.args.env.find("smac") == -1, "ERROR: this worker is not for smac"
 
+	def pos_dict_to_array(self, dict):
+		arr = []
+		for k,v in dict.items():
+			arr.append(v)
+		return np.array(arr)
+
+	def play(self, evaluate=False):
+		self.env.reset()
+		terminated = [False] * self.n_agents  
+		last_action = np.zeros((self.args.n_agents, self.args.n_actions)) 
+		self.agents.policy.init_hidden(1)
+
+		won = False  # check if episode resulted in win state
+		dumps = []
+
+
+		epsilon = 0 if evaluate else self.epsilon
+		ep_num = 0
+		while not all(terminated):
+			time.sleep(0.05)
+			obs = self.env.get_agent_obs()
+			state = np.array(obs).flatten()
+			actions, avail_actions, actions_onehot = [], [], []
+
+
+		    # get the messages for all the agents
+			all_msgs = []
+			if self.args.with_comm:
+				all_msgs = self.agents.get_all_messages(np.array(obs), last_action)
+
+
+			for agent_id in range(self.n_agents):
+				avail_action = [1] * self.n_actions  # avail actions for agent_i 
+
+		    	# for comm
+				action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs)
+
+		    	# generate a vector of 0s and 1s of the corresponding action; actions chosen gets 1 and rest is 0
+				action_onehot = np.zeros(self.args.n_actions)
+				action_onehot[action] = 1
+
+				# adds action info to corresponding lists
+				actions.append(action)
+				actions_onehot.append(action_onehot)
+				avail_actions.append(avail_action)
+				last_action[agent_id] = action_onehot
+
+
+
+			_, reward, terminated, _ = self.env.step(actions)
+
+			view = self.env.render('rgb_array')
+			dumps.append((obs, all_msgs, view,
+				self.pos_dict_to_array(self.env.get_prey_pos()),
+				self.pos_dict_to_array(self.env.get_agent_pos())))
+
+		prey_captured = 0
+		for prey_i in range(self.env.n_preys):
+			if self.env._prey_alive[prey_i] == False:
+				prey_captured += 1
+		dump_id = f'analysis/dumps/dump_{datetime.now()}-prey_captured.pkl'
+	
+		with open(dump_id,'wb') as f:
+			pickle.dump(dumps,f)
+		
+		return prey_captured	
 
 	def generate_episode(self, episode_num=None, evaluate=False, epoch_num=None, eval_epoch=None):
 		# lists to store whole episode info
@@ -39,10 +108,10 @@ class RolloutWorker:
 
 		epsilon = 0 if evaluate else self.epsilon
 
-		while not all(terminated): 
-		    obs = self.env.get_agent_obs()  
-		    state = np.array(obs).flatten()  
-		    actions, avail_actions, actions_onehot = [], [], []  
+		while not all(terminated):
+		    obs = self.env.get_agent_obs()
+		    state = np.array(obs).flatten()
+		    actions, avail_actions, actions_onehot = [], [], []
 
 		    # get the messages for all the agents
 		    all_msgs = []
@@ -72,8 +141,8 @@ class RolloutWorker:
 		    obs_ep.append(obs)
 		    state_ep.append(state)
 
-		   
-		    actions_ep.append(np.reshape(actions, [self.n_agents, 1]))
+
+		    actions_ep.append(np.reshape(torch.tensor(actions).cpu(), [self.n_agents, 1]))
 		    actions_onehot_ep.append(actions_onehot)
 		    avail_actions_ep.append(avail_actions)
 		    reward_ep.append([sum(reward)])  # reward returned for this env is a list with a reward for each agent, so sum

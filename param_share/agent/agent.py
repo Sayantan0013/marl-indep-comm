@@ -32,7 +32,7 @@ class Agents:
 		if self.args.last_action:
 		    inputs = np.hstack((inputs, last_action))  # concatenates arrays column wise (horizontally)
 		if self.args.reuse_network:
-		    inputs = np.hstack((inputs, agent_id))
+		    inputs = np.hstack((inputs, agent_id))	# How does this re-use the network
 		hidden_state = self.policy.eval_hidden[:, agent_num, :]
 
 		# transform the shape of inputs from (42,) to (1,42)

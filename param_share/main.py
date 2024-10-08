@@ -3,7 +3,7 @@ import gym
 import ma_gym
 from common.arguments import common_args, config_args
 from runner import Runner
-from smac.env import StarCraft2Env
+# from smac.env import StarCraft2Env
 
 import numpy as np
 import torch
@@ -24,13 +24,14 @@ if __name__ == '__main__':
 	
 
 	if args.env in ["3m", "5m_vs_6m", "3s_vs_5z", "MMM2"]:
-		env = StarCraft2Env(map_name=args.env)
-		env_info = env.get_env_info()
-		args.n_actions = env_info["n_actions"]
-		args.n_agents = env_info["n_agents"]
-		args.state_shape = env_info["state_shape"]
-		args.obs_shape = env_info["obs_shape"]
-		args.episode_limit = env_info["episode_limit"]
+		pass
+		# env = StarCraft2Env(map_name=args.env)
+		# env_info = env.get_env_info()
+		# args.n_actions = env_info["n_actions"]
+		# args.n_agents = env_info["n_agents"]
+		# args.state_shape = env_info["state_shape"]
+		# args.obs_shape = env_info["obs_shape"]
+		# args.episode_limit = env_info["episode_limit"]
 	elif args.env in ["PredatorPrey"]:
 		# to avoid registering a whole new environment just do it here for now
 		env = gym.make('PredatorPrey7x7-v0', grid_shape=(7, 7), n_agents=4, n_preys=2, penalty=-0.75)
@@ -61,5 +62,8 @@ if __name__ == '__main__':
 	runner = Runner(env, args)
 
 	# parameterize run according to the number of independent experiments to run, i.e., independent sets of n_epochs over the model; default is 1
+	learn = False
 	if args.learn:
 		runner.run(N_EXPERIMENTS)
+	else:
+		runner.test(5)
