@@ -30,7 +30,7 @@ def common_args():
 	parser.add_argument('--cuda', type=bool, default=False, help='whether to use the GPU')
 	# if doing communication
 	parser.add_argument('--with_comm', type=bool, default=False, help='whether to commtest')
-	parser.add_argument('--msg_cut', type=bool, default=False, help='whether to cut msg')
+	parser.add_argument('--msg_cut', type=bool, default=False, help='whether to cut msg')	
 
 	# cuda device
 	parser.add_argument('--cuda_device', type=int, default=0, help='which cuda')
@@ -61,6 +61,8 @@ def config_args(args):
 	args.lr = 5e-4
 
 	args.comm_net_dim = 64 # 32
+	args.key_dim = 5
+	args.attention_hidden_dim = 64
 
 	args.train_steps = 1
 

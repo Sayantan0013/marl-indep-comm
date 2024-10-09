@@ -25,7 +25,7 @@ class IDQL:
 
         if args.with_comm:
             # TO RECEIVE ALL MSGS AS INPUT
-            input_shape += (args.n_agents - 1) * args.final_msg_dim
+            # input_shape += (args.n_agents - 1) * args.final_msg_dim
             print("obs shape with comm: ", input_shape)
 
         self.eval_rnn = RNN(input_shape, args)
@@ -147,7 +147,7 @@ class IDQL:
             inputs.append(torch.eye(self.args.n_agents).unsqueeze(0).expand(episode_num, -1, -1))
             inputs_next.append(torch.eye(self.args.n_agents).unsqueeze(0).expand(episode_num, -1, -1))
 
-
+        
         inputs = torch.cat([x.reshape(episode_num * self.args.n_agents, -1) for x in inputs], dim=1)
         inputs_next = torch.cat([x.reshape(episode_num * self.args.n_agents, -1) for x in inputs_next], dim=1)
         return inputs, inputs_next, all_msgs, all_msgs_next

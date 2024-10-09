@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from numpy import sqrt
 
 import torch
 
@@ -14,8 +15,8 @@ class RNN(nn.Module):
     def __init__(self, input_shape, args):
         super(RNN, self).__init__()
         self.args = args
-
-        self.fc1 = nn.Linear(input_shape, args.rnn_hidden_dim)
+        self.attention = Attention(input_shape + args.rnn_hidden_dim, args)
+        self.fc1 = nn.Linear(input_shape + args.final_msg_dim, args.rnn_hidden_dim)
         self.rnn = nn.GRUCell(args.rnn_hidden_dim, args.rnn_hidden_dim)  # rnn gating mechanism; gated recurrent unit
         self.fc2 = nn.Linear(args.rnn_hidden_dim, args.n_actions)
 
@@ -32,45 +33,62 @@ class RNN(nn.Module):
             
             msgs_rec = msgs
 
+            h_in = hidden_state.reshape(-1, self.args.rnn_hidden_dim)
+            q = self.attention(obs,h_in)
+
             # select the messages only from the other agetns, i.e., remove the ones of agent_num: [n_agents - 1, obs_dim]
             if agent_num != None:
-                # if batch size = 1 (during execution)
-                # TO RECEIVE ALL MSGS
-                idxs = torch.tensor([i for i in range(self.args.n_agents) if i!=agent_num]).to("cuda" if self.args.cuda else "cpu")
-                #idxs = torch.tensor([i for i in range(self.args.n_agents)]).to("cuda" if self.args.cuda else "cpu")
-                msgs_rec = torch.index_select(msgs_rec, dim=1, index=idxs)
-                # [1, input_dim] -> [1, input_dim + msg_dim]
-                obs = torch.cat((obs, msgs_rec.reshape(obs.shape[0], -1)), dim=-1)
+                # Removing its own message
+                # idxs = torch.tensor([i for i in range(self.args.n_agents) if i!=agent_num]).to("cuda" if self.args.cuda else "cpu")
+                # msgs_rec = torch.index_select(msgs_rec, dim=1, index=idxs)
+                # separating key value pair
+                keys, values = msgs_rec[:,:,:self.args.key_dim], msgs_rec[:,:,self.args.key_dim:]
+                # calculting attention vector and final comm
+                alpha = F.softmax(keys@q.T/sqrt(self.args.key_dim),dim=-1)
+                agg_msg = (values.transpose(1,2)@alpha).transpose(1,2)
+                obs = torch.cat((obs, agg_msg.reshape(obs.shape[0], -1)), dim=-1)
+
             else:
                 # during training everything comes together (bs >= 1), so need another way to cat the respective messages to the right indices
-                # i.e., all agents should only receive the messages from the others and not themselves (m_-i)
-                a_mask = torch.eye(self.args.n_agents).reshape(self.args.n_agents, self.args.n_agents, 1)
-                a_mask = torch.abs(a_mask - 1)
-                if self.args.cuda:
-                    a_mask = a_mask.cuda()
-                
-                # msg_rec: [bs, n_agents, msg_dim]
-                msgs_rec_rep = msgs_rec.repeat(1, self.args.n_agents, 1).reshape(ep_num, self.args.n_agents, self.args.n_agents, -1)
-                # NOTE CHANGED TO RECEIVE ALL MSGS
-                msgs_repective_idxs = msgs_rec_rep * a_mask #* a_mask
-                # [bs, n_a, (n_a - 1)*msg_dim] - m_-i: each agent receives the messages from the others
-                msgs_repective_idxs_no_0 = msgs_repective_idxs[msgs_repective_idxs.count_nonzero(dim=-1) != 0].reshape(ep_num, self.args.n_agents, -1)
-                msgs_rec = msgs_repective_idxs_no_0
+
+                msgs_rec = msgs_rec.repeat(1, self.args.n_agents, 1).reshape(ep_num, self.args.n_agents, self.args.n_agents, -1)
+
+                keys, values = msgs_rec[:,:,:,:self.args.key_dim], msgs_rec[:,:,:,self.args.key_dim:]
+                q = q.reshape(ep_num,self.args.n_agents,1,-1)
+                # calculting attention vector and final comm
+                alpha = F.softmax((keys*q).sum(dim=-1)/sqrt(self.args.key_dim),dim=-1).unsqueeze(-1)
+                agg_msg = (values*alpha).sum(-2)
 
                 # cat messages to the inputs to the policy network
                 # obs here is in shape [bs * n_a, input_dim]; need to change to [bs, n_a, input_dim]
                 obs_aux = obs.reshape(ep_num, self.args.n_agents, -1)
                 # now concat with msgs_rec and change to previous shape: [bs, n_a, input_dim+msg_dim] -> [bs*n_a, input_dim+msg_dim]
-                obs = torch.cat((obs_aux, msgs_rec), dim=-1).reshape(ep_num * self.args.n_agents, -1)
+                obs = torch.cat((obs_aux, agg_msg), dim=-1).reshape(ep_num * self.args.n_agents, -1)
 
+
+        ## Plan ##
+        ## We will first send the observation with last hidden state to generate a query ##
+        ## This query vector will then be used to generate the attention weight for all the agents comms ##
+        ## Then we will follow the same scheme but with less dims ##
 
         x = F.relu(self.fc1(obs))
-        h_in = hidden_state.reshape(-1, self.args.rnn_hidden_dim)
         h = self.rnn(x, h_in)
         q = self.fc2(h)
 
         return q, h
 
+class Attention(nn.Module):
+    def __init__(self, input_shape, args):
+        super(Attention, self).__init__()
+        self.args = args
+        self.fc1 = nn.Linear(input_shape, args.attention_hidden_dim)
+        self.fc2 = nn.Linear(args.attention_hidden_dim, args.key_dim)
+    
+    def forward(self, obs, rnn_hidden):
+        x = torch.cat([obs,rnn_hidden],dim=-1)
+        x = F.relu(self.fc1(x))
+        q = self.fc2(x)
+        return q
 
 # Critic of Central-V
 class Critic(nn.Module):
