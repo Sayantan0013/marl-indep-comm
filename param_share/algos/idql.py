@@ -48,8 +48,8 @@ class IDQL:
 
         self.model_dir = args.model_dir + '/' + args.alg + '/' + args.map
         if self.args.load_model:
-            if os.path.exists(self.model_dir + '/rnn_net_params.pkl'):
-                path_rnn = self.model_dir + '/rnn_net_params.pkl'
+            if os.path.exists(self.model_dir + '/2_rnn_net_params.pkl'):
+                path_rnn = self.model_dir + '/2_rnn_net_params.pkl'
                 map_location = 'cuda:0' if self.args.cuda else 'cpu'
                 self.eval_rnn.load_state_dict(torch.load(path_rnn, map_location=map_location))
                 print('Successfully load the model: {}'.format(path_rnn))

@@ -18,7 +18,10 @@ class Comm_net(nn.Module):
         self.fc2 = nn.Linear(args.comm_net_dim, args.comm_net_dim)
         self.fc3 = nn.Linear(args.comm_net_dim, args.final_msg_dim)
 
-        self.fc_key = nn.Linear(args.comm_net_dim,args.key_dim)
+        self.key_fc1 = nn.Linear(input_shape,args.comm_net_dim)
+        self.key_fc2 = nn.Linear(args.comm_net_dim,args.comm_net_dim)
+        self.key_fc3 = nn.Linear(args.comm_net_dim,args.key_dim)
+
 
         self.args = args
         self.input_shape = input_shape
@@ -36,12 +39,16 @@ class Comm_net(nn.Module):
         x1 = F.relu(self.fc1(inputs))
         x2 = F.relu(self.fc2(x1))
         x3 = self.fc3(x2)
-        k = self.fc_key(x2)
+
+        # key generation
+        k1 = F.relu(self.key_fc1(inputs))
+        k2 = F.relu(self.key_fc2(x1))
+        k3 = self.key_fc3(x2)
 
         m = x3
 
         msg = m.reshape(-1, self.args.n_agents, self.args.final_msg_dim) 
-        key = k.reshape(-1,self.args.n_agents,self.args.key_dim)
+        key = k3.reshape(-1,self.args.n_agents,self.args.key_dim)
         final_msg = torch.cat([key,msg],dim=-1)    
 
         return final_msg

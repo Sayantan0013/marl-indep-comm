@@ -87,7 +87,7 @@ class RolloutWorker:
 		for prey_i in range(self.env.n_preys):
 			if self.env._prey_alive[prey_i] == False:
 				prey_captured += 1
-		dump_id = f'analysis/dumps/dump_{datetime.now()}-prey_captured.pkl'
+		dump_id = f'analysis/dumps/dump_{datetime.now()}-{prey_captured}-prey_captured.pkl'
 	
 		with open(dump_id,'wb') as f:
 			pickle.dump(dumps,f)

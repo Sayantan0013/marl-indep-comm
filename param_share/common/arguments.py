@@ -61,7 +61,7 @@ def config_args(args):
 	args.lr = 5e-4
 
 	args.comm_net_dim = 64 # 32
-	args.key_dim = 5
+	args.key_dim = 4
 	args.attention_hidden_dim = 64
 
 	args.train_steps = 1
@@ -74,7 +74,7 @@ def config_args(args):
 	args.lambda_nopt = 1
 
 	# msg dim after net
-	args.final_msg_dim = 10
+	args.final_msg_dim = 32
 	
 
 	return args
