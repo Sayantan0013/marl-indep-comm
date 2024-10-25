@@ -9,7 +9,7 @@ The folders contain the codes for the MARL framework both when sharing and not s
 ### Running examples
 * Running PredatorPrey with communication
 ```
-python main.py --env PredatorPrey --n_steps 1000000 --alg idql --cuda True --with_comm True --rnn_hidden_dim 64
+python main.py --env PredatorPrey --n_steps 1000000 --alg idql --cuda True --with_comm True --rnn_hidden_dim 64 --learn True
 ```
 * Running a SMAC environment (3s_vs_5z in this case) without communication
 ```

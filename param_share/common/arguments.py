@@ -74,7 +74,7 @@ def config_args(args):
 	args.lambda_nopt = 1
 
 	# msg dim after net
-	args.final_msg_dim = 32
+	args.final_msg_dim = 10
 	
 
 	return args

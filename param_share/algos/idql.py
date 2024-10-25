@@ -187,8 +187,11 @@ class IDQL:
         self.eval_hidden = torch.zeros((episode_num, self.n_agents, self.args.rnn_hidden_dim))
         self.target_hidden = torch.zeros((episode_num, self.n_agents, self.args.rnn_hidden_dim))
 
-    def save_model(self, train_step):
-        num = str(train_step // self.args.save_cycle)
+    def save_model(self, train_step, end_training=False):
+        if not end_training:
+            num = str(train_step // self.args.save_cycle)
+        else:
+            num = 'final'
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
         torch.save(self.eval_rnn.state_dict(),  self.model_dir + '/' + num + '_rnn_net_params.pkl')
