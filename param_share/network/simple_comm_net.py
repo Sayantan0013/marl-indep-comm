@@ -42,8 +42,8 @@ class Comm_net(nn.Module):
 
         # key generation
         k1 = F.relu(self.key_fc1(inputs))
-        k2 = F.relu(self.key_fc2(x1))
-        k3 = self.key_fc3(x2)
+        k2 = F.relu(self.key_fc2(k1))
+        k3 = self.key_fc3(k2)
 
         m = x3
 
