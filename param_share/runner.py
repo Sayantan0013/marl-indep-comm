@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from common.utils import get_name_header
 
 
 class Runner:
@@ -55,9 +56,9 @@ class Runner:
 				plt.xlabel('step*{}'.format(self.args.evaluate_cycle))
 				plt.ylabel('episode_rewards')
 
-				plt.savefig(self.save_path + '/plt_{}_{}_{}ts.png'.format(num, self.args.env, self.args.n_steps), format='png')
-				np.save(self.save_path + '/episode_rewards_{}_{}_{}ts'.format(num, self.args.env, self.args.n_steps), episode_rewards)
-				np.save(self.save_path + '/win_rates_{}_{}_{}ts'.format(num, self.args.env, self.args.n_steps), win_rates)
+				plt.savefig(self.save_path + f'/plt_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts.png', format='png')
+				np.save(self.save_path + f'/episode_rewards_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', episode_rewards)
+				np.save(self.save_path + f'/win_rates_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', win_rates)
 
 				evaluate_steps += 1
 
@@ -103,9 +104,9 @@ class Runner:
 		plt.xlabel('steps*{}'.format(self.args.evaluate_cycle))
 		plt.ylabel('episode_rewards')
 
-		plt.savefig(self.save_path + '/plt_{}_{}_{}ts.png'.format(num, self.args.env, self.args.n_steps), format='png')
-		np.save(self.save_path + '/episode_rewards_{}_{}_{}ts'.format(num, self.args.env, self.args.n_steps), episode_rewards)
-		np.save(self.save_path + '/win_rates_{}_{}_{}ts'.format(num, self.args.env, self.args.n_steps), win_rates)
+		plt.savefig(self.save_path + f'/plt_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts.png', format='png')
+		np.save(self.save_path + f'/episode_rewards_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', episode_rewards)
+		np.save(self.save_path + f'/win_rates_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', win_rates)
 
 	def evaluate(self, epoch_num=None):
 		win_counter = 0

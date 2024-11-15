@@ -20,7 +20,7 @@ class Agents:
 		self.args = args
 		
 
-	def choose_action(self, obs, last_action, agent_num, avail_actions, epsilon, maven_z=None, evaluate=False, msg_all=None):
+	def choose_action(self, obs, last_action, agent_num, avail_actions, epsilon, maven_z=None, evaluate=False, msg_all=None, get_alpha = False):
 		
 		inputs = obs.copy()
 		avail_actions_ind = np.nonzero(avail_actions)[0]  # index of actions which can be choose
@@ -46,12 +46,12 @@ class Agents:
 			if self.args.with_comm:
 				msg_all = msg_all.cuda(device=self.args.cuda_device)
 			
-
+		alpha = None
 		if self.args.with_comm:
 			# if comm
-			q_value, self.policy.eval_hidden[:, agent_num, :] = self.policy.eval_rnn(inputs, hidden_state, msg_all, agent_num)
+			q_value, self.policy.eval_hidden[:, agent_num, :], alpha = self.policy.eval_rnn(inputs, hidden_state, msg_all, agent_num, get_alpha = True)
 		else:
-			q_value, self.policy.eval_hidden[:, agent_num, :] = self.policy.eval_rnn(inputs, hidden_state)
+			q_value, self.policy.eval_hidden[:, agent_num, :], alpha = self.policy.eval_rnn(inputs, hidden_state, get_alpha = True)
 
 		# if the algo is coma, choose the actions from softmax
 		if self.args.alg == 'coma':
@@ -64,7 +64,15 @@ class Agents:
 			else:
 				action = torch.argmax(q_value)
 
-		return action
+		if(get_alpha):
+			alpha = alpha.cpu()
+			alpha_dummy = torch.ones(self.n_agents)*torch.min(alpha)
+			alpha_pos = torch.ones(self.n_agents,dtype=torch.bool)
+			alpha_pos[agent_num] = False
+			alpha_dummy[alpha_pos] = alpha.view(-1)
+			return action, alpha_dummy
+		else:
+			return action
 
 
 	# this is to be used during execution; given obs and last action (as per the normal inputs), should generate the messages for all agents
@@ -89,11 +97,11 @@ class Agents:
 		episode_num = terminated.shape[0]  # number of episode batches inside this batch
 		max_episode_len = 0
 		for episode_idx in range(episode_num):
-		    for transition_idx in range(self.args.episode_limit):
-		        if terminated[episode_idx, transition_idx, 0] == 1:  # TODO: better understand this 3D shape; prob is [buffer_size, episode_limit, ?]; transition idx refers to the trajectory, i.e., passage from one state to another inside this episode
-		            if transition_idx + 1 >= max_episode_len:
-		                max_episode_len = transition_idx + 1
-		            break
+			for transition_idx in range(self.args.episode_limit):
+				if terminated[episode_idx, transition_idx, 0] == 1:  # TODO: better understand this 3D shape; prob is [buffer_size, episode_limit, ?]; transition idx refers to the trajectory, i.e., passage from one state to another inside this episode
+					if transition_idx + 1 >= max_episode_len:
+						max_episode_len = transition_idx + 1
+					break
 		return max_episode_len
 
 
@@ -101,12 +109,12 @@ class Agents:
 		# different episode has different length, so we need to get max length of the batch
 		max_episode_len = self._get_max_episode_len(batch)  # inside batch there are several episode batches; as they may have different sizes, gets the bigger
 		for key in batch.keys():
-		    batch[key] = batch[key][:, :max_episode_len]  # TODO: see this
+			batch[key] = batch[key][:, :max_episode_len]  # TODO: see this
 		self.policy.learn(batch, max_episode_len, train_step, epsilon)
 
 		# savind model
 		if train_step > 0 and train_step % self.args.save_cycle == 0:
-		    self.policy.save_model(train_step)
+			self.policy.save_model(train_step)
 
 
 	def _choose_action_from_softmax(self, inputs, avail_actions, epsilon, evaluate=False):
@@ -135,11 +143,11 @@ class Agents:
 		episode_num = terminated.shape[0]  # number of episode batches inside this batch
 		max_episode_len = 0
 		for episode_idx in range(episode_num):
-		    for transition_idx in range(self.args.episode_limit):
-		        if terminated[episode_idx, transition_idx, 0] == 1:  # TODO: better understand this 3D shape; prob is [buffer_size, episode_limit, ?]; transition idx refers to the trajectory, i.e., passage from one state to another inside this episode
-		            if transition_idx + 1 >= max_episode_len:
-		                max_episode_len = transition_idx + 1
-		            break
+			for transition_idx in range(self.args.episode_limit):
+				if terminated[episode_idx, transition_idx, 0] == 1:  # TODO: better understand this 3D shape; prob is [buffer_size, episode_limit, ?]; transition idx refers to the trajectory, i.e., passage from one state to another inside this episode
+					if transition_idx + 1 >= max_episode_len:
+						max_episode_len = transition_idx + 1
+					break
 		return max_episode_len
 
 
@@ -148,11 +156,11 @@ class Agents:
 	# different episode has different length, so we need to get max length of the batch
 		max_episode_len = self._get_max_episode_len(batch)  # inside batch there are several episode batches; as they may have different sizes, gets the bigger
 		for key in batch.keys():
-		    batch[key] = batch[key][:, :max_episode_len]  # TODO: see this
+			batch[key] = batch[key][:, :max_episode_len]  # TODO: see this
 		self.policy.learn(batch, max_episode_len, train_step, epsilon)
 
 		# savind model
 		if train_step > 0 and train_step % self.args.save_cycle == 0:
-		    self.policy.save_model(train_step)
+			self.policy.save_model(train_step)
 
 

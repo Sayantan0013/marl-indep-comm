@@ -5,6 +5,8 @@ import numpy as np
 import pickle
 import time
 from datetime import datetime
+import os
+from common.utils import get_name_header
 
 
 # new worker for the communication tests
@@ -33,7 +35,7 @@ class RolloutWorker:
 			arr.append(v)
 		return np.array(arr)
 
-	def play(self, evaluate=False):
+	def play(self, evaluate = False):
 		self.env.reset()
 		terminated = [False] * self.n_agents  
 		last_action = np.zeros((self.args.n_agents, self.args.n_actions)) 
@@ -49,7 +51,7 @@ class RolloutWorker:
 			time.sleep(0.05)
 			obs = self.env.get_agent_obs()
 			state = np.array(obs).flatten()
-			actions, avail_actions, actions_onehot = [], [], []
+			actions, avail_actions, actions_onehot, alphas = [], [], [], []
 
 
 			# get the messages for all the agents
@@ -62,13 +64,14 @@ class RolloutWorker:
 				avail_action = [1] * self.n_actions  # avail actions for agent_i 
 
 				# for comm
-				action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs)
+				action, alpha = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha = True)
 
 				# generate a vector of 0s and 1s of the corresponding action; actions chosen gets 1 and rest is 0
 				action_onehot = np.zeros(self.args.n_actions)
 				action_onehot[action] = 1
 
 				# adds action info to corresponding lists
+				alphas.append(alpha)
 				actions.append(action)
 				actions_onehot.append(action_onehot)
 				avail_actions.append(avail_action)
@@ -78,19 +81,24 @@ class RolloutWorker:
 
 			_, reward, terminated, _ = self.env.step(actions)
 
-			view = self.env.render('rgb_array')
-			dumps.append((obs, all_msgs, view,
-				self.pos_dict_to_array(self.env.get_prey_pos()),
-				self.pos_dict_to_array(self.env.get_agent_pos())))
+			if(not self.args.render):
+				view = self.env.render('rgb_array')
+				dumps.append((obs, all_msgs, view, alphas,
+					self.pos_dict_to_array(self.env.get_prey_pos()),
+					self.pos_dict_to_array(self.env.get_agent_pos())))
+			else:
+				self.env.render()
 
 		prey_captured = 0
 		for prey_i in range(self.env.n_preys):
 			if self.env._prey_alive[prey_i] == False:
 				prey_captured += 1
-		dump_id = f'analysis/dumps/dump_{datetime.now()}-{prey_captured}-prey_captured.pkl'
-	
-		with open(dump_id,'wb') as f:
-			pickle.dump(dumps,f)
+		if(not self.args.render):
+			os.makedirs(f'analysis/dumps/{get_name_header(self.args)}', exist_ok=True)
+			dump_id = f'analysis/dumps/{get_name_header(self.args)}/dump_{datetime.now()}-{prey_captured}-prey_captured.pkl'
+		
+			with open(dump_id,'wb') as f:
+				pickle.dump(dumps,f)
 		
 		return prey_captured	
 
@@ -352,4 +360,3 @@ class RolloutWorker_SMAC:
 			self.env.close()
 
 		return episode, episode_reward, win_tag, {'steps_taken': step}
-

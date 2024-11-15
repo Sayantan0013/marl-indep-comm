@@ -23,7 +23,7 @@ class RNN(nn.Module):
         self.input_shape = input_shape
         self.msg_dim = args.final_msg_dim
 
-    def forward(self, obs, hidden_state, msgs=None, agent_num=None):
+    def forward(self, obs, hidden_state, msgs=None, agent_num=None, get_alpha=False):
         # if communicating        
         if self.args.with_comm:
 
@@ -35,6 +35,7 @@ class RNN(nn.Module):
 
             h_in = hidden_state.reshape(-1, self.args.rnn_hidden_dim)
             q = self.attention(obs,h_in)
+            alpha = None
 
             # select the messages only from the other agetns, i.e., remove the ones of agent_num: [n_agents - 1, obs_dim]
             if agent_num != None:
@@ -87,7 +88,10 @@ class RNN(nn.Module):
         h = self.rnn(x, h_in)
         q = self.fc2(h)
 
-        return q, h
+        if(get_alpha):
+            return q, h, alpha.detach()
+        else:
+            return q, h
 
 class Attention(nn.Module):
     def __init__(self, input_shape, args):

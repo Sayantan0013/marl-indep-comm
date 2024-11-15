@@ -34,7 +34,7 @@ if __name__ == '__main__':
 		# args.episode_limit = env_info["episode_limit"]
 	elif args.env in ["PredatorPrey"]:
 		# to avoid registering a whole new environment just do it here for now
-		env = gym.make('PredatorPrey7x7-v0', grid_shape=(7, 7), n_agents=4, n_preys=2, penalty=-0.75)
+		env = gym.make('PredatorPrey7x7-v0', grid_shape=(args.grid_size, args.grid_size), n_agents= args.n_agents, n_preys= args.n_preys, penalty= args.penalty,step_cost= args.step_cost)
 		args.n_actions = env.action_space[0].n
 		args.n_agents = env.n_agents
 		args.state_shape = 28 * args.n_agents 

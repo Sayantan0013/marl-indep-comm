@@ -5,6 +5,7 @@ from network.simple_comm_net import Comm_net
 import torch.nn as nn
 import numpy as np
 import sys
+from common.utils import get_name_header
 
 
 class IDQL:
@@ -48,8 +49,8 @@ class IDQL:
 
         self.model_dir = args.model_dir + '/' + args.alg + '/' + args.map
         if self.args.load_model:
-            if os.path.exists(self.model_dir + '/2_rnn_net_params.pkl'):
-                path_rnn = self.model_dir + '/2_rnn_net_params.pkl'
+            if os.path.exists(f'{self.model_dir}/{get_name_header(self.args)}/final_rnn_net_params.pkl'):
+                path_rnn = f'{self.model_dir}/{get_name_header(self.args)}/final_rnn_net_params.pkl'
                 map_location = 'cuda:0' if self.args.cuda else 'cpu'
                 self.eval_rnn.load_state_dict(torch.load(path_rnn, map_location=map_location))
                 print('Successfully load the model: {}'.format(path_rnn))
@@ -194,4 +195,4 @@ class IDQL:
             num = 'final'
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
-        torch.save(self.eval_rnn.state_dict(),  self.model_dir + '/' + num + '_rnn_net_params.pkl')
+        torch.save(self.eval_rnn.state_dict(),  f'{self.model_dir}/{num}_{get_name_header(self.args)}_rnn_net_params.pkl')

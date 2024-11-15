@@ -28,6 +28,7 @@ def common_args():
 	parser.add_argument('--target_update_cycle', type=int, default=200, help='how often to update the target network')
 	parser.add_argument('--save_cycle', type=int, default=6650, help='how often to save the model')
 	parser.add_argument('--cuda', type=bool, default=False, help='whether to use the GPU')
+	parser.add_argument('--render', type=bool, default=False, help='whether to show in real time')
 	# if doing communication
 	parser.add_argument('--with_comm', type=bool, default=False, help='whether to commtest')
 	parser.add_argument('--msg_cut', type=bool, default=False, help='whether to cut msg')	
@@ -36,6 +37,12 @@ def common_args():
 	parser.add_argument('--cuda_device', type=int, default=0, help='which cuda')
 	parser.add_argument('--rnn_hidden_dim', type=int, default=64, help='rnn dims')
 
+	# Pred-prey specific arguments
+	parser.add_argument('--grid_size', type=int, default=10, help='grid size of the environment')
+	parser.add_argument('--n_agents', type=int, default=4, help='number of predetor')
+	parser.add_argument('--n_preys', type=int, default=2, help='number of prey')
+	parser.add_argument('--penalty', type=float, default=-0.5, help='Penalty to get close to prey alone')
+	parser.add_argument('--step_cost',type=float, default=-0.075, help='cost not to end the game')
 
 	args = parser.parse_args()
 
