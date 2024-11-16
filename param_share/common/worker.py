@@ -102,7 +102,7 @@ class RolloutWorker:
 		
 		return prey_captured	
 
-	def generate_episode(self, episode_num=None, evaluate=False, epoch_num=None, eval_epoch=None):
+	def generate_episode(self, episode_num=None, evaluate=False, epoch_num=None, eval_epoch=None, save = False):
 		# lists to store whole episode info
 		obs_ep, actions_ep, reward_ep, state_ep, avail_actions_ep, actions_onehot_ep, terminate, padded = [], [], [], [], [], [], [], []
 		self.env.reset()
@@ -113,13 +113,14 @@ class RolloutWorker:
 		self.agents.policy.init_hidden(1)
 
 		won = False  # check if episode resulted in win state
+		dumps = []
 
 		epsilon = 0 if evaluate else self.epsilon
 
 		while not all(terminated):
 			obs = self.env.get_agent_obs()
 			state = np.array(obs).flatten()
-			actions, avail_actions, actions_onehot = [], [], []
+			actions, avail_actions, actions_onehot, alphas = [], [], [], []
 
 			# get the messages for all the agents
 			all_msgs = []
@@ -131,7 +132,11 @@ class RolloutWorker:
 				avail_action = [1] * self.n_actions  # avail actions for agent_i 
 
 				# for comm
-				action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs)
+				if(save):
+					action, alpha = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha=True)
+					alphas.append(alpha)
+				else:
+					action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs)
 
 				# generate a vector of 0s and 1s of the corresponding action; actions chosen gets 1 and rest is 0
 				action_onehot = np.zeros(self.args.n_actions)
@@ -142,6 +147,12 @@ class RolloutWorker:
 				actions_onehot.append(action_onehot)
 				avail_actions.append(avail_action)
 				last_action[agent_id] = action_onehot
+
+			if(evaluate):
+				view = self.env.render('rgb_array')
+				dumps.append((obs, all_msgs, view, alphas,
+				self.pos_dict_to_array(self.env.get_prey_pos()),
+				self.pos_dict_to_array(self.env.get_agent_pos())))
 
 			_, reward, terminated, info = self.env.step(actions)
 
@@ -161,6 +172,22 @@ class RolloutWorker:
 			step += 1
 			if self.args.epsilon_anneal_scale == 'step':
 				epsilon = epsilon - self.anneal_epsilon if epsilon > self.min_epsilon else epsilon
+
+		if(save):
+			view = self.env.render('rgb_array')
+			dumps.append((obs, all_msgs, view, alphas,
+			self.pos_dict_to_array(self.env.get_prey_pos()),
+			self.pos_dict_to_array(self.env.get_agent_pos())))
+			prey_captured = 0
+			for prey_i in range(self.env.n_preys):
+				if self.env._prey_alive[prey_i] == False:
+					prey_captured += 1
+			if(not self.args.render):
+				os.makedirs(f'analysis/dumps/{get_name_header(self.args)}/{epoch_num}', exist_ok=True)
+				dump_id = f'analysis/dumps/{get_name_header(self.args)}/{epoch_num}/{datetime.now()}-{prey_captured}-prey_captured.pkl'
+			
+				with open(dump_id,'wb') as f:
+					pickle.dump(dumps,f)
 
 		# handle last obs
 		obs = self.env.get_agent_obs()

@@ -113,7 +113,8 @@ class Runner:
 		episode_rewards = 0
 		steps_avrg = 0
 		for epoch in range(self.args.evaluate_epoch):
-			_, episode_reward, won, info = self.rolloutWorker.generate_episode(epoch, evaluate=True, epoch_num=epoch_num)
+			to_save = (epoch==0) and (epoch_num%10000 == 0)
+			_, episode_reward, won, info = self.rolloutWorker.generate_episode(epoch, evaluate=True, epoch_num=epoch_num, save = to_save)
 			episode_rewards += episode_reward
 			steps_avrg += info['steps_taken']
 			if won:  # if env ended in winning state 
