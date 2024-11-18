@@ -54,6 +54,11 @@ class IDQL:
                 map_location = 'cuda:0' if self.args.cuda else 'cpu'
                 self.eval_rnn.load_state_dict(torch.load(path_rnn, map_location=map_location))
                 print('Successfully load the model: {}'.format(path_rnn))
+                if(self.args.with_comm):
+                    path_comm = f'{self.model_dir}/{get_name_header(self.args)}/final_comm_net_params.pkl'
+                    self.commtest.load_state_dict(torch.load(path_comm, map_location=map_location))
+                    print('Successfully load the comm model: {}'.format(path_comm))
+
             else:
                 raise Exception("No model!")
 
@@ -193,6 +198,9 @@ class IDQL:
             num = str(train_step // self.args.save_cycle)
         else:
             num = 'final'
-        if not os.path.exists(self.model_dir):
-            os.makedirs(self.model_dir)
-        torch.save(self.eval_rnn.state_dict(),  f'{self.model_dir}/{num}_{get_name_header(self.args)}_rnn_net_params.pkl')
+        if not os.path.exists(f'{self.model_dir}/{get_name_header(self.args)}'):
+            os.makedirs(f'{self.model_dir}/{get_name_header(self.args)}')
+        torch.save(self.eval_rnn.state_dict(),  f'{self.model_dir}/{get_name_header(self.args)}/{num}_rnn_net_params.pkl')
+        if self.args.with_comm:
+            torch.save(self.commtest.state_dict(),  f'{self.model_dir}/{get_name_header(self.args)}/{num}_comm_net_params.pkl')
+            
