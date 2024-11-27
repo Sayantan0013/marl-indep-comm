@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import sys
 import numpy as np
 from torch_dct import dct, idct
+import torch.jit
 
 def get_tensor_size(t: torch.tensor):
 	return t.nelement() * t.element_size()
@@ -14,13 +15,28 @@ def get_tensor_size(t: torch.tensor):
 class Comm_net(nn.Module):
     def __init__(self, input_shape, args):
         super(Comm_net, self).__init__()
-        self.fc1 = nn.Linear(input_shape, args.comm_net_dim)
-        self.fc2 = nn.Linear(args.comm_net_dim, args.comm_net_dim)
-        self.fc3 = nn.Linear(args.comm_net_dim, args.final_msg_dim)
+        self.fc = nn.Sequential(
+            nn.Linear(input_shape, args.comm_net_dim),
+            nn.ReLU(),
+            nn.Linear(args.comm_net_dim, args.comm_net_dim),
+            nn.ReLU(),
+            nn.Linear(args.comm_net_dim, args.final_msg_dim)
+        )
+        self.key_fc = nn.Sequential(
+            nn.Linear(input_shape, args.comm_net_dim),
+            nn.ReLU(),
+            nn.Linear(args.comm_net_dim, args.comm_net_dim),
+            nn.ReLU(),
+            nn.Linear(args.comm_net_dim, args.key_dim)
+        )
 
-        self.key_fc1 = nn.Linear(input_shape,args.comm_net_dim)
-        self.key_fc2 = nn.Linear(args.comm_net_dim,args.comm_net_dim)
-        self.key_fc3 = nn.Linear(args.comm_net_dim,args.key_dim)
+        # self.fc1 = nn.Linear(input_shape, args.comm_net_dim)
+        # self.fc2 = nn.Linear(args.comm_net_dim, args.comm_net_dim)
+        # self.fc3 = nn.Linear(args.comm_net_dim, args.final_msg_dim)
+
+        # self.key_fc1 = nn.Linear(input_shape,args.comm_net_dim)
+        # self.key_fc2 = nn.Linear(args.comm_net_dim,args.comm_net_dim)
+        # self.key_fc3 = nn.Linear(args.comm_net_dim,args.key_dim)
 
 
         self.args = args
@@ -36,19 +52,23 @@ class Comm_net(nn.Module):
         ep_num = inputs.shape[0] // self.args.n_agents
 
         # simple fc net
-        x1 = F.relu(self.fc1(inputs))
-        x2 = F.relu(self.fc2(x1))
-        x3 = self.fc3(x2)
+        # x1 = F.relu(self.fc1(inputs))
+        # x2 = F.relu(self.fc2(x1))
+        # x3 = self.fc3(x2)
+
+        msg_task = torch.jit.fork(self.fc,inputs)
+        key_task = torch.jit.fork(self.key_fc,inputs)
 
         # key generation
-        k1 = F.relu(self.key_fc1(inputs))
-        k2 = F.relu(self.key_fc2(k1))
-        k3 = self.key_fc3(k2)
+        # k1 = F.relu(self.key_fc1(inputs))
+        # k2 = F.relu(self.key_fc2(k1))
+        # k3 = self.key_fc3(k2)
 
-        m = x3
+        m = msg_task.wait()
+        k = key_task.wait()
 
         msg = m.reshape(-1, self.args.n_agents, self.args.final_msg_dim) 
-        key = k3.reshape(-1,self.args.n_agents,self.args.key_dim)
+        key = k.reshape(-1,self.args.n_agents,self.args.key_dim)
         final_msg = torch.cat([key,msg],dim=-1)    
 
         return final_msg
