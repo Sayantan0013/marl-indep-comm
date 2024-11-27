@@ -15,7 +15,7 @@ def common_args():
 	parser.add_argument("--n_episodes", "-nep", type=int, default=1, help="set n_episodes")
 	parser.add_argument("--epsilon", "-eps", default=0.5, help="set epsilon value")
 	parser.add_argument('--last_action', type=bool, default=True, help='whether to use the last action to choose action')
-	parser.add_argument('--reuse_network', type=bool, default=True, help='whether to use one network for all agents')
+	parser.add_argument('--reuse_network', default=True, action='store_false', help='whether to use one network for all agents')
 	parser.add_argument('--gamma', type=float, default=0.99, help='the discount factor')
 	parser.add_argument('--evaluate_epoch', type=int, default=20, help='the number of the epoch to evaluate the agent')
 	parser.add_argument('--alg', type=str, default='vdn', help='the algorithm to train the agent')
@@ -43,6 +43,7 @@ def common_args():
 	parser.add_argument('--n_preys', type=int, default=2, help='number of prey')
 	parser.add_argument('--penalty', type=float, default=-0.5, help='Penalty to get close to prey alone')
 	parser.add_argument('--step_cost',type=float, default=-0.075, help='cost not to end the game')
+	parser.add_argument('--max_steps',type=int, default=100, help='maximum number of steps in the game')
 
 	args = parser.parse_args()
 
