@@ -123,6 +123,12 @@ class Runner:
 		return win_counter / self.args.evaluate_epoch, episode_rewards / self.args.evaluate_epoch
 	
 	def test(self, num_games ):
+		total_wins = 0
 		for i in range(num_games):
 			prey_captured = self.rolloutWorker.play(evaluate=True)
+			total_wins += prey_captured == self.args.n_preys
 			print(f'{prey_captured} preys are captured')
+		print(f'Win percentage = {total_wins/num_games}')
+		with open('resultls.csv', 'a') as f:
+			f.write(f"{self.args.grid_size},{self.args.n_agents},{self.args.n_preys},{self.args.max_steps},{total_wins/num_games}\n")
+			f.close()

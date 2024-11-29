@@ -28,7 +28,7 @@ def common_args():
 	parser.add_argument('--target_update_cycle', type=int, default=200, help='how often to update the target network')
 	parser.add_argument('--save_cycle', type=int, default=6650, help='how often to save the model')
 	parser.add_argument('--cuda', type=bool, default=False, help='whether to use the GPU')
-	parser.add_argument('--render', type=bool, default=False, help='whether to show in real time')
+	parser.add_argument('--render', action='store_true', default=False, help='whether to show in real time')
 	# if doing communication
 	parser.add_argument('--with_comm', type=bool, default=False, help='whether to commtest')
 	parser.add_argument('--msg_cut', type=bool, default=False, help='whether to cut msg')	
