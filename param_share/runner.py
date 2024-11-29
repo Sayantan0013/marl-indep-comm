@@ -129,6 +129,6 @@ class Runner:
 			total_wins += prey_captured == self.args.n_preys
 			print(f'{prey_captured} preys are captured')
 		print(f'Win percentage = {total_wins/num_games}')
-		with open('resultls.csv', 'a') as f:
+		with open('results.csv', 'a') as f:
 			f.write(f"{self.args.grid_size},{self.args.n_agents},{self.args.n_preys},{self.args.max_steps},{total_wins/num_games}\n")
 			f.close()
