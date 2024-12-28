@@ -44,6 +44,7 @@ def common_args():
 	parser.add_argument('--penalty', type=float, default=-0.5, help='Penalty to get close to prey alone')
 	parser.add_argument('--step_cost',type=float, default=-0.075, help='cost not to end the game')
 	parser.add_argument('--max_steps',type=int, default=100, help='maximum number of steps in the game')
+	parser.add_argument('--interactive',action='store_true',default=False,help='interactive play')
 
 	args = parser.parse_args()
 

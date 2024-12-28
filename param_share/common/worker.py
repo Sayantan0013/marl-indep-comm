@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 import os
 from common.utils import get_name_header
+from pyglet.window import key
 
 
 # new worker for the communication tests
@@ -24,6 +25,10 @@ class RolloutWorker:
 		self.epsilon = args.epsilon
 		self.anneal_epsilon = args.anneal_epsilon
 		self.min_epsilon = args.min_epsilon
+		self.key_pressed = 4
+		self.quit = False
+		self.call = False
+		self.call_dir = 0
 
 		print("RolloutWorker initialized")
 
@@ -34,6 +39,52 @@ class RolloutWorker:
 		for k,v in dict.items():
 			arr.append(v)
 		return np.array(arr)
+
+	def key_press(self, k, mod):
+		if k == key.LEFT:
+			self.key_pressed = 1
+		elif k == key.RIGHT:
+			self.key_pressed = 3
+		elif k == key.UP:
+			self.key_pressed = 2
+		elif k == key.DOWN:
+			self.key_pressed = 0
+		elif k == key.Q:
+			self.quit = True
+
+		elif k == key.E:
+			self.call = True
+			self.call_dir = 1
+		elif k == key.F:
+			self.call = True
+			self.call_dir = 2
+		elif k == key.C:
+			self.call = True
+			self.call_dir = 3
+		elif k == key.S:
+			self.call = True
+			self.call_dir = 4
+
+	def key_release(self, k, mod):
+		self.key_pressed = 4
+		self.quit = False
+		self.call = False
+		self.call_dir = 0
+
+
+	def call_dir_to_pos(self, call_dir):
+		def get_pos_in_1d(row,col,size = 5):
+			return row*size + col
+		if call_dir == 0:
+			return get_pos_in_1d(3,3)
+		elif call_dir == 1:
+			return get_pos_in_1d(1,2)
+		elif call_dir == 2:
+			return get_pos_in_1d(3,4)
+		elif call_dir == 3:
+			return get_pos_in_1d(4,3)
+		elif call_dir == 4:
+			return get_pos_in_1d(3,2)
 
 	def play(self, evaluate = False):
 		self.env.reset()
@@ -47,7 +98,7 @@ class RolloutWorker:
 
 		epsilon = 0 if evaluate else self.epsilon
 		ep_num = 0
-		while not all(terminated):
+		while not self.quit:
 			time.sleep(0.05)
 			obs = self.env.get_agent_obs()
 			state = np.array(obs).flatten()
@@ -57,7 +108,10 @@ class RolloutWorker:
 			# get the messages for all the agents
 			all_msgs = []
 			if self.args.with_comm:
-				all_msgs = self.agents.get_all_messages(np.array(obs), last_action)
+				obs_array = np.array(obs)
+				if(self.call):
+					obs_array[0][self.call_dir_to_pos(self.call_dir)] = 1
+				all_msgs = self.agents.get_all_messages(obs_array, last_action)
 
 
 			for agent_id in range(self.n_agents):
@@ -78,7 +132,8 @@ class RolloutWorker:
 				last_action[agent_id] = action_onehot
 
 
-
+			actions[0] *= 0
+			actions[0] += self.key_pressed
 			_, reward, terminated, _ = self.env.step(actions)
 
 			if(not self.args.render):
@@ -88,6 +143,8 @@ class RolloutWorker:
 					self.pos_dict_to_array(self.env.get_agent_pos())))
 			else:
 				self.env.render()
+				self.env.viewer.window.on_key_press = self.key_press
+				self.env.viewer.window.on_key_release = self.key_release
 
 		prey_captured = 0
 		for prey_i in range(self.env.n_preys):
