@@ -51,7 +51,7 @@ class RolloutWorker:
 			time.sleep(0.05)
 			obs = self.env.get_agent_obs()
 			state = np.array(obs).flatten()
-			actions, avail_actions, actions_onehot, alphas = [], [], [], []
+			actions, avail_actions, actions_onehot, alphas, queries = [], [], [], [], []
 
 
 			# get the messages for all the agents
@@ -64,7 +64,7 @@ class RolloutWorker:
 				avail_action = [1] * self.n_actions  # avail actions for agent_i 
 
 				# for comm
-				action, alpha = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha = True)
+				action, alpha, query = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha = True)
 
 				# generate a vector of 0s and 1s of the corresponding action; actions chosen gets 1 and rest is 0
 				action_onehot = np.zeros(self.args.n_actions)
@@ -73,6 +73,7 @@ class RolloutWorker:
 				# adds action info to corresponding lists
 				alphas.append(alpha)
 				actions.append(action)
+				queries.append(query)
 				actions_onehot.append(action_onehot)
 				avail_actions.append(avail_action)
 				last_action[agent_id] = action_onehot
@@ -83,7 +84,7 @@ class RolloutWorker:
 
 			if(not self.args.render):
 				view = self.env.render('rgb_array')
-				dumps.append((obs, all_msgs, view, alphas,
+				dumps.append((obs, all_msgs, view, alphas, queries,
 					self.pos_dict_to_array(self.env.get_prey_pos()),
 					self.pos_dict_to_array(self.env.get_agent_pos())))
 			else:
@@ -120,7 +121,7 @@ class RolloutWorker:
 		while not all(terminated):
 			obs = self.env.get_agent_obs()
 			state = np.array(obs).flatten()
-			actions, avail_actions, actions_onehot, alphas = [], [], [], []
+			actions, avail_actions, actions_onehot, alphas, queries = [], [], [], [], []
 
 			# get the messages for all the agents
 			all_msgs = []
@@ -133,8 +134,9 @@ class RolloutWorker:
 
 				# for comm
 				if(save):
-					action, alpha = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha=True)
+					action, alpha, query = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs, get_alpha=True)
 					alphas.append(alpha)
+					queries.append(query)
 				else:
 					action = self.agents.choose_action(obs[agent_id], last_action[agent_id], agent_id, avail_action, epsilon, evaluate, msg_all=all_msgs)
 
@@ -150,7 +152,7 @@ class RolloutWorker:
 
 			if(evaluate):
 				view = self.env.render('rgb_array')
-				dumps.append((obs, all_msgs, view, alphas,
+				dumps.append((obs, all_msgs, view, alphas, queries,
 				self.pos_dict_to_array(self.env.get_prey_pos()),
 				self.pos_dict_to_array(self.env.get_agent_pos())))
 

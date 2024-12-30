@@ -49,9 +49,9 @@ class Agents:
 		alpha = None
 		if self.args.with_comm:
 			# if comm
-			q_value, self.policy.eval_hidden[:, agent_num, :], alpha = self.policy.eval_rnn(inputs, hidden_state, msg_all, agent_num, get_alpha = True)
+			q_value, self.policy.eval_hidden[:, agent_num, :], alpha, query = self.policy.eval_rnn(inputs, hidden_state, msg_all, agent_num, get_alpha = True)
 		else:
-			q_value, self.policy.eval_hidden[:, agent_num, :], alpha = self.policy.eval_rnn(inputs, hidden_state, get_alpha = True)
+			q_value, self.policy.eval_hidden[:, agent_num, :], alpha, query = self.policy.eval_rnn(inputs, hidden_state, get_alpha = True)
 
 		# if the algo is coma, choose the actions from softmax
 		if self.args.alg == 'coma':
@@ -70,7 +70,7 @@ class Agents:
 			alpha_pos = torch.ones(self.n_agents,dtype=torch.bool)
 			alpha_pos[agent_num] = False
 			alpha_dummy[alpha_pos] = alpha.view(-1)
-			return action, alpha_dummy
+			return action, alpha_dummy, query
 		else:
 			return action
 

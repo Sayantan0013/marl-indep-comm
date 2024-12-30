@@ -34,7 +34,7 @@ class RNN(nn.Module):
             msgs_rec = msgs
 
             h_in = hidden_state.reshape(-1, self.args.rnn_hidden_dim)
-            q = self.attention(obs,h_in)
+            query = self.attention(obs,h_in)
             alpha = None
 
             # select the messages only from the other agetns, i.e., remove the ones of agent_num: [n_agents - 1, obs_dim]
@@ -45,8 +45,8 @@ class RNN(nn.Module):
                 # separating key value pair
 
                 keys, values = msgs_rec[:,:,:self.args.key_dim], msgs_rec[:,:,self.args.key_dim:]
-                q = q.unsqueeze(-2)
-                alpha = F.softmax((keys*q).sum(dim=-1)/sqrt(self.args.key_dim),dim=-1).unsqueeze(-1)
+                query = query.unsqueeze(-2)
+                alpha = F.softmax((keys*query).sum(dim=-1)/sqrt(self.args.key_dim),dim=-1).unsqueeze(-1)
 
                 agg_msg = (values*alpha).sum(dim=-2)
                 obs = torch.cat((obs, agg_msg.reshape(obs.shape[0], -1)), dim=-1)
@@ -67,9 +67,9 @@ class RNN(nn.Module):
                 msgs_rec = msgs_repective_idxs_no_0
 
                 keys, values = msgs_rec[:,:,:,:self.args.key_dim], msgs_rec[:,:,:,self.args.key_dim:]
-                q = q.reshape(ep_num,self.args.n_agents,1,-1)
+                query = query.reshape(ep_num,self.args.n_agents,1,-1)
                 # calculting attention vector and final comm
-                alpha = F.softmax((keys*q).sum(dim=-1)/sqrt(self.args.key_dim),dim=-1).unsqueeze(-1)
+                alpha = F.softmax((keys*query).sum(dim=-1)/sqrt(self.args.key_dim),dim=-1).unsqueeze(-1)
                 agg_msg = (values*alpha).sum(dim = -2)
 
                 # cat messages to the inputs to the policy network
@@ -89,7 +89,7 @@ class RNN(nn.Module):
         q = self.fc2(h)
 
         if(get_alpha):
-            return q, h, alpha.detach()
+            return q, h, alpha.detach(), query.detach()
         else:
             return q, h
 

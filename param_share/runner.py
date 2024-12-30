@@ -24,7 +24,7 @@ class Runner:
 
 		self.args = args
 
-		self.save_path = self.args.result_dir + '/' + args.alg
+		self.save_path = self.args.result_dir + '/' + args.alg + '/' + args.map
 		if not os.path.exists(self.save_path):
 			os.makedirs(self.save_path)
 
