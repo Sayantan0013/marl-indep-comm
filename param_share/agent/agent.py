@@ -83,11 +83,13 @@ class Agents:
 		inputs.append(obs)
 
 		inputs = torch.cat([x for x in inputs], dim=1)
+		hidden = self.policy.eval_hidden.detach().clone().squeeze(dim=0)
 
 		if self.args.cuda:
 			inputs = inputs.cuda(device=self.args.cuda_device)
+			hidden = hidden.cuda(device=self.args.cuda_device)
 
-		msgs_agents = self.policy.commtest(inputs)
+		msgs_agents = self.policy.commtest(torch.cat([inputs,hidden],dim=-1))
 
 		return msgs_agents
 

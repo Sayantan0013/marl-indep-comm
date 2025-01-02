@@ -17,7 +17,7 @@ class IDQL:
         input_shape = self.obs_shape
 
         if args.with_comm:
-            input_comm_shape = self.obs_shape
+            input_comm_shape = self.obs_shape + args.rnn_hidden_dim
 
         if args.last_action:
             input_shape += self.n_actions
@@ -49,13 +49,15 @@ class IDQL:
 
         self.model_dir = args.model_dir + '/' + args.alg + '/' + args.map
         if self.args.load_model:
-            if os.path.exists(f'{self.model_dir}/{get_name_header(self.args)}/final_rnn_net_params.pkl'):
-                path_rnn = f'{self.model_dir}/{get_name_header(self.args)}/final_rnn_net_params.pkl'
+            ## OG: 10x10_4_4_0.5_0.075/ 10x10_4_5_0.5_0.075 Closed: 10x10_5_2_0.05_0.075
+            load_dir = 'with_hidden_in_comm'
+            if os.path.exists(f'{self.model_dir}/{load_dir}/final_rnn_net_params.pkl'):
+                path_rnn = f'{self.model_dir}/{load_dir}/final_rnn_net_params.pkl'
                 map_location = 'cuda:0' if self.args.cuda else 'cpu'
                 self.eval_rnn.load_state_dict(torch.load(path_rnn, map_location=map_location))
                 print('Successfully load the model: {}'.format(path_rnn))
                 if(self.args.with_comm):
-                    path_comm = f'{self.model_dir}/{get_name_header(self.args)}/final_comm_net_params.pkl'
+                    path_comm = f'{self.model_dir}/{load_dir}/final_comm_net_params.pkl'
                     self.commtest.load_state_dict(torch.load(path_comm, map_location=map_location))
                     print('Successfully load the comm model: {}'.format(path_comm))
 
@@ -135,12 +137,18 @@ class IDQL:
             ### comm messages
             inputs_msg = torch.cat([x for x in inputs], dim=-1)
             inputs_msg_next = torch.cat([x for x in inputs_next], dim=-1)
+            eval_hidden = self.eval_hidden.detach().clone().view(*inputs_msg.shape[:-1],-1)
+            target_hidden = self.target_hidden.detach().clone().view(*inputs_msg_next.shape[:-1],-1)
+
+
             if self.args.cuda:
+                eval_hidden = eval_hidden.cuda(device=self.args.cuda_device)
+                target_hidden = target_hidden.cuda(device=self.args.cuda_device)
                 inputs_msg = inputs_msg.cuda(device=self.args.cuda_device)
                 inputs_msg_next = inputs_msg_next.cuda(device=self.args.cuda_device)
 
-            all_msgs = self.commtest(inputs_msg)
-            all_msgs_next = self.target_commtest(inputs_msg_next)
+            all_msgs = self.commtest(torch.cat([inputs_msg,eval_hidden],dim=-1))
+            all_msgs_next = self.target_commtest(torch.cat([inputs_msg_next,target_hidden],dim=-1))
 
 
         if self.args.last_action:

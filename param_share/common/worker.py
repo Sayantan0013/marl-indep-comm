@@ -109,7 +109,7 @@ class RolloutWorker:
 		self.env.reset()
 		terminated = [False] * self.n_agents 
 		step = 0
-		episode_reward = 0  
+		episode_reward = 0
 		last_action = np.zeros((self.args.n_agents, self.args.n_actions)) 
 		self.agents.policy.init_hidden(1)
 
