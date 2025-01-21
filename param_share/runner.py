@@ -56,9 +56,9 @@ class Runner:
 				plt.xlabel('step*{}'.format(self.args.evaluate_cycle))
 				plt.ylabel('episode_rewards')
 
-				plt.savefig(self.save_path + f'/plt_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts.png', format='png')
-				np.save(self.save_path + f'/episode_rewards_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', episode_rewards)
-				np.save(self.save_path + f'/win_rates_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', win_rates)
+				plt.savefig(self.save_path + f'/{get_name_header(self.args)}_plt_{num}_{self.args.n_steps}ts.png', format='png')
+				np.save(self.save_path + f'/{get_name_header(self.args)}_episode_rewards_{num}__{self.args.n_steps}ts', episode_rewards)
+				np.save(self.save_path + f'/{get_name_header(self.args)}_win_rates_{num}_{self.args.n_steps}ts', win_rates)
 
 				evaluate_steps += 1
 
@@ -104,9 +104,9 @@ class Runner:
 		plt.xlabel('steps*{}'.format(self.args.evaluate_cycle))
 		plt.ylabel('episode_rewards')
 
-		plt.savefig(self.save_path + f'/plt_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts.png', format='png')
-		np.save(self.save_path + f'/episode_rewards_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', episode_rewards)
-		np.save(self.save_path + f'/win_rates_{num}_{self.args.env}_{get_name_header(self.args)}_{self.args.n_steps}ts', win_rates)
+		plt.savefig(self.save_path + f'/{get_name_header(self.args)}_plt_{num}_{self.args.n_steps}ts.png', format='png')
+		np.save(self.save_path + f'/{get_name_header(self.args)}_episode_rewards_{num}__{self.args.n_steps}ts', episode_rewards)
+		np.save(self.save_path + f'/{get_name_header(self.args)}_win_rates_{num}_{self.args.n_steps}ts', win_rates)
 
 	def evaluate(self, epoch_num=None):
 		win_counter = 0

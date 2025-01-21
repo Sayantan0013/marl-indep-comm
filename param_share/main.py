@@ -37,8 +37,12 @@ if __name__ == '__main__':
 		env = gym.make('PredatorPrey7x7-v0', grid_shape=(args.grid_size, args.grid_size), n_agents= args.n_agents, n_preys= args.n_preys, penalty= args.penalty,step_cost= args.step_cost, max_steps = args.max_steps)
 		args.n_actions = env.action_space[0].n
 		args.n_agents = env.n_agents
-		args.state_shape = 28 * args.n_agents 
-		args.obs_shape = 28
+		if('closed' in  args.map):
+			args.state_shape = 30 * args.n_agents
+			args.obs_shape = 30
+		else:
+			args.state_shape = 28 * args.n_agents 
+			args.obs_shape = 28
 		args.episode_limit = env._max_steps
 		print("Env PP with penalty ", env._penalty)
 	else:
@@ -66,4 +70,4 @@ if __name__ == '__main__':
 	if args.learn:
 		runner.run(N_EXPERIMENTS)
 	else:
-		runner.test(5)
+		runner.test(100)
